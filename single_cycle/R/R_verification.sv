@@ -278,22 +278,3 @@ module tb_rv32i;
     end
 endmodule
 
-
-module tb_CPU_TOP;
-    logic clk;
-    logic reset;
-
-    CPU_TOP dut (
-        .clk  (clk),
-        .reset(reset)
-    );
-
-    always #5 clk = ~clk;
-
-    initial begin
-        clk = 0;
-        reset = 1;
-        #5;
-        reset = 0;
-    end
-endmodule
