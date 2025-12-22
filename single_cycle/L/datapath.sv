@@ -44,8 +44,9 @@ module datapath (
         mux_rd_data,
         mux_regster_data2;
 
-    assign Instr_Addr = pc_out;
-    assign mem_wdata  = regster_data2;
+    assign Instr_Addr  = pc_out;
+    assign mem_wdata   = regster_data2;
+    // assign mux_rd_data = mem_rdata;
 
     program_counter U_PC (
         .clk  (clk),
@@ -91,11 +92,12 @@ module datapath (
         .y (mux_regster_data2)
     );
 
-    MUX_2x1 U_RD_MUX (
-        .a (mem_rdata),
-        .b (alu_result),
-        .en(rd_mux_en),
-        .y (mux_rd_data)
+
+    MUX_4x1 U_RD_MUX_4 (
+        .a  (alu_result),
+        .b  (mem_rdata),
+        .sel(rd_mux_en),
+        .y  (mux_rd_data)
     );
 
 
@@ -141,14 +143,13 @@ module regfile (
     end
 
     always_ff @(posedge clk) begin
-        if (WE) begin
+        if (WE && WA != 0) begin
             reg_file[WA] <= WD;
         end
     end
 
-
-    assign RD1 = reg_file[RA1];
-    assign RD2 = reg_file[RA2];
+    assign RD1 = (RA1 == 0) ? 32'b0 : reg_file[RA1];
+    assign RD2 = (RA2 == 0) ? 32'b0 : reg_file[RA2];
 
 endmodule
 
@@ -201,7 +202,8 @@ module imm_extend (
     output logic [31:0] imm_addr
 );
 
-    logic [2:0] funt_3 = instr_opcode[14:12];
+    logic [2:0] funt_3;
+    assign funt_3 = instr_opcode[14:12];
 
     always_comb begin
         imm_addr = 32'b0;
@@ -220,7 +222,7 @@ module imm_extend (
             };
         end
         if (instr_opcode[6:0] == 7'b0000011) begin
-            imm_addr = {{20{instr_opcode[31]}}, instr_opcode[31:20]};
+             imm_addr = {{20{instr_opcode[31]}}, instr_opcode[31:20]};
         end
     end
 
@@ -249,3 +251,19 @@ module MUX_2x1 (
 
 endmodule
 
+module MUX_4x1 (
+    input  logic [31:0] a,
+    input  logic [31:0] b,
+    input  logic [ 1:0] sel,
+    output logic [31:0] y
+);
+
+    always_comb begin
+        case (sel)
+            2'b00:   y = a;
+            2'b01:   y = b;
+            default: y = 32'bx;
+        endcase
+    end
+
+endmodule
